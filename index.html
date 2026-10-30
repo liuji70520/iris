@@ -1,0 +1,553 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>CIMA-TxR · 转录组 × 免疫组库双预训练联合模型</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<script>
+  tailwind.config = {
+    theme: {
+      extend: {
+        fontFamily: { sans: ['Inter', 'ui-sans-serif', 'system-ui', 'PingFang SC', 'Microsoft YaHei', 'sans-serif'] },
+      }
+    }
+  }
+</script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<script src="https://unpkg.com/lucide@latest"></script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4"></script>
+<style>
+  html { scroll-behavior: smooth; }
+  body { background: #09090b; }
+  .mono { font-family: 'JetBrains Mono', ui-monospace, monospace; }
+  .glow { background: radial-gradient(ellipse 60% 40% at 50% 0%, rgba(52,211,153,0.07), transparent 70%); }
+  section { scroll-margin-top: 5rem; }
+  ::selection { background: rgba(52,211,153,.25); }
+</style>
+</head>
+<body class="text-zinc-300 antialiased font-sans">
+
+<!-- ============ NAV ============ -->
+<nav class="fixed top-0 inset-x-0 z-50 border-b border-white/5 bg-zinc-950/70 backdrop-blur-md">
+  <div class="max-w-6xl mx-auto px-6 h-16 flex items-center justify-between">
+    <div class="flex items-center gap-3">
+      <div class="w-7 h-7 rounded-lg bg-emerald-400/10 border border-emerald-400/20 flex items-center justify-center">
+        <i data-lucide="dna" class="w-4 h-4 text-emerald-400"></i>
+      </div>
+      <span class="text-zinc-100 font-medium tracking-tight">CIMA-TxR</span>
+      <span class="mono text-[11px] text-zinc-500 border border-zinc-800 rounded px-1.5 py-0.5">v1.0</span>
+    </div>
+    <div class="hidden md:flex items-center gap-7 text-sm text-zinc-400">
+      <a href="#problem" class="hover:text-zinc-100 transition-colors">问题</a>
+      <a href="#architecture" class="hover:text-zinc-100 transition-colors">架构</a>
+      <a href="#capabilities" class="hover:text-zinc-100 transition-colors">能力</a>
+      <a href="#benchmarks" class="hover:text-zinc-100 transition-colors">性能</a>
+      <a href="#case" class="hover:text-zinc-100 transition-colors">案例</a>
+      <a href="#quickstart" class="hover:text-zinc-100 transition-colors">快速开始</a>
+    </div>
+    <div class="flex items-center gap-3">
+      <a href="#" class="hidden sm:flex items-center gap-2 text-sm text-zinc-400 hover:text-zinc-100 transition-colors">
+        <i data-lucide="github" class="w-4 h-4"></i>GitHub
+      </a>
+      <a href="#quickstart" class="flex items-center gap-2 text-sm bg-emerald-400 text-zinc-950 font-medium px-3.5 py-1.5 rounded-lg hover:bg-emerald-300 transition-colors">
+        <i data-lucide="terminal" class="w-4 h-4"></i>快速开始
+      </a>
+    </div>
+  </div>
+</nav>
+
+<!-- ============ HERO ============ -->
+<header class="glow pt-36 pb-20 px-6">
+  <div class="max-w-6xl mx-auto">
+    <div class="flex items-center gap-2 mb-6">
+      <span class="text-xs tracking-widest uppercase text-emerald-400 border border-emerald-400/20 bg-emerald-400/5 rounded-full px-3 py-1">CIMA-RD · 单细胞多模态 · 自身免疫病</span>
+    </div>
+    <h1 class="text-5xl md:text-7xl font-light text-zinc-50 tracking-tighter leading-tight">
+      CIMA-TxR
+    </h1>
+    <p class="mt-6 text-2xl md:text-3xl font-light text-zinc-300 tracking-tight">
+      让每个克隆既有<span class="text-emerald-400">身份</span>，又有<span class="text-emerald-400">状态</span>。
+    </p>
+    <p class="mt-6 max-w-2xl text-zinc-400 leading-relaxed">
+      全球首个转录组 × 免疫组库<strong class="text-zinc-200 font-medium">双预训练</strong>联合基础模型。
+      每个细胞的基因表达谱与配对 TCRαβ / BCR 重轻链序列在同一潜空间中对齐——
+      回答自身免疫病的核心问题：<em class="text-zinc-200 not-italic">哪些克隆在致病、处于什么状态、在哪里、治疗后往哪走</em>。
+    </p>
+    <div class="mt-10 flex flex-wrap items-center gap-4">
+      <a href="#quickstart" class="flex items-center gap-2 bg-emerald-400 text-zinc-950 font-medium px-5 py-2.5 rounded-lg hover:bg-emerald-300 transition-colors">
+        <i data-lucide="rocket" class="w-4 h-4"></i>开始使用
+      </a>
+      <a href="#architecture" class="flex items-center gap-2 border border-zinc-700 text-zinc-300 px-5 py-2.5 rounded-lg hover:border-zinc-500 hover:text-zinc-100 transition-colors">
+        <i data-lucide="network" class="w-4 h-4"></i>模型架构
+      </a>
+      <a href="#citation" class="flex items-center gap-2 text-zinc-400 hover:text-zinc-100 transition-colors px-2 py-2.5">
+        <i data-lucide="file-text" class="w-4 h-4"></i>引用模型
+      </a>
+    </div>
+    <!-- stats -->
+    <div class="mt-16 grid grid-cols-2 md:grid-cols-4 gap-px bg-zinc-800/60 rounded-xl overflow-hidden border border-zinc-800/60">
+      <div class="bg-zinc-950 px-6 py-5">
+        <div class="text-3xl font-light text-zinc-50 tracking-tight mono">4.2M</div>
+        <div class="mt-1 text-xs text-zinc-500 tracking-wide">配对单细胞训练语料</div>
+      </div>
+      <div class="bg-zinc-950 px-6 py-5">
+        <div class="text-3xl font-light text-zinc-50 tracking-tight mono">1,872</div>
+        <div class="mt-1 text-xs text-zinc-500 tracking-wide">例 donor · 6 种自身免疫病种</div>
+      </div>
+      <div class="bg-zinc-950 px-6 py-5">
+        <div class="text-3xl font-light text-emerald-400 tracking-tight mono">0.93</div>
+        <div class="mt-1 text-xs text-zinc-500 tracking-wide">患者级疾病活动度 AUC</div>
+      </div>
+      <div class="bg-zinc-950 px-6 py-5">
+        <div class="text-3xl font-light text-emerald-400 tracking-tight mono">91%</div>
+        <div class="mt-1 text-xs text-zinc-500 tracking-wide">锚点自身反应克隆回收率</div>
+      </div>
+    </div>
+  </div>
+</header>
+
+<!-- ============ PROBLEM ============ -->
+<section id="problem" class="py-24 px-6 border-t border-white/5">
+  <div class="max-w-6xl mx-auto">
+    <p class="text-xs tracking-widest uppercase text-emerald-400 mb-4">问题</p>
+    <h2 class="text-3xl md:text-4xl font-light text-zinc-50 tracking-tight max-w-3xl leading-tight">
+      自身免疫病里，我们最想知道的不是某个 TCR 理论上能识别什么。
+    </h2>
+    <p class="mt-5 max-w-2xl text-zinc-400 leading-relaxed">
+      而是患者体内<strong class="text-zinc-200 font-medium">哪些克隆真的在致病、它们处于什么状态、被什么驱动、治疗后怎么变</strong>。
+      这要求同时看见克隆的"身份"（受体序列）与"状态"（转录表型）——单模态模型各只能看到一半。
+    </p>
+
+    <div class="mt-14 grid md:grid-cols-3 gap-4">
+      <div class="rounded-xl border border-zinc-800/70 bg-zinc-900/40 p-6">
+        <i data-lucide="layers" class="w-5 h-5 text-zinc-500"></i>
+        <h3 class="mt-4 text-zinc-100 font-normal tracking-tight">联合模型停留在前预训练时代</h3>
+        <p class="mt-2 text-sm text-zinc-400 leading-relaxed">CoNGA、Tessa、mvTCR、MIST、TSTScope 全部从零训练或小修小补——没有人把 scGPT 类转录组基础模型与 SCEPTR 类组库模型同时作为初始化做联合微调。</p>
+      </div>
+      <div class="rounded-xl border border-zinc-700 bg-zinc-900/40 p-6">
+        <i data-lucide="shield-off" class="w-5 h-5 text-zinc-500"></i>
+        <h3 class="mt-4 text-zinc-100 font-normal tracking-tight">BCR / 体液免疫完全空白</h3>
+        <p class="mt-2 text-sm text-zinc-400 leading-relaxed">现有联合模型 100% 只做 TCR。而自身免疫的核心标志物在 B 细胞——自身抗体、SHM 突变负荷、类别转换、生发中心反应——零件都在，没人组装。</p>
+      </div>
+      <div class="rounded-xl border border-zinc-800/70 bg-zinc-900/40 p-6">
+        <i data-lucide="map-pin-off" class="w-5 h-5 text-zinc-500"></i>
+        <h3 class="mt-4 text-zinc-100 font-normal tracking-tight">自身免疫场景空白</h3>
+        <p class="mt-2 text-sm text-zinc-400 leading-relaxed">mvTCR / MIST / TSTScope 全部是感染与肿瘤——强抗原、单克隆扩增。自身免疫是慢性、低亲和力、多克隆场景，联合模型的行为此前无人验证。</p>
+      </div>
+    </div>
+
+    <div class="mt-10 rounded-xl border border-emerald-400/20 bg-emerald-400/[0.04] p-6 flex items-start gap-4">
+      <i data-lucide="arrow-right-circle" class="w-5 h-5 text-emerald-400 mt-0.5 shrink-0"></i>
+      <p class="text-sm text-zinc-300 leading-relaxed">
+        CIMA-RD 的每个细胞天然同时携带转录组与配对 TCR/BCR——联合建模是唯一能吃满这一数据结构优势的路线。
+        <span class="text-emerald-300">克隆给细胞一个身份，转录组给克隆一个状态。</span>
+      </p>
+    </div>
+  </div>
+</section>
+
+<!-- ============ ARCHITECTURE ============ -->
+<section id="architecture" class="py-24 px-6 border-t border-white/5">
+  <div class="max-w-6xl mx-auto">
+    <p class="text-xs tracking-widest uppercase text-emerald-400 mb-4">架构</p>
+    <h2 class="text-3xl md:text-4xl font-light text-zinc-50 tracking-tight">双预训练编码器 × 克隆型引导对齐</h2>
+    <p class="mt-5 max-w-2xl text-zinc-400 leading-relaxed">
+      两侧编码器均迁移自已发表的预训练权重，不从零训练；融合层以克隆型为天然监督信号做跨模态对齐，再经双向 cross-attention 显式交互。
+    </p>
+
+    <!-- diagram -->
+    <div class="mt-14 grid lg:grid-cols-[1fr_auto_1fr_auto_1.1fr_auto_1fr] gap-4 items-stretch">
+
+      <!-- inputs -->
+      <div class="flex flex-col gap-4">
+        <div class="rounded-xl border border-zinc-800/70 bg-zinc-900/40 p-5 flex-1">
+          <div class="flex items-center gap-2 text-zinc-100 text-sm font-normal"><i data-lucide="bar-chart-3" class="w-4 h-4 text-zinc-500"></i>scRNA-seq</div>
+          <p class="mt-2 text-xs text-zinc-500 leading-relaxed">基因表达谱<br>HVG + 标准化</p>
+        </div>
+        <div class="rounded-xl border border-zinc-800/70 bg-zinc-900/40 p-5 flex-1">
+          <div class="flex items-center gap-2 text-zinc-100 font-normal"><i data-lucide="dna" class="w-4 h-4 text-zinc-500"></i>配对受体序列</div>
+          <p class="mt-2 text-xs text-zinc-500 leading-relaxed">TCRα + TCRβ<br>BCR 重链 + 轻链（含 SHM / 类别转换）</p>
+        </div>
+      </div>
+
+      <div class="hidden lg:flex items-center"><i data-lucide="arrow-right" class="w-5 h-5 text-zinc-600"></i></div>
+
+      <!-- encoders -->
+      <div class="flex flex-col gap-4">
+        <div class="rounded-xl border border-zinc-800/70 bg-zinc-900/40 p-5 flex-1">
+          <div class="flex items-center justify-between">
+            <span class="text-zinc-100 text-sm font-normal">scGPT 编码器</span>
+            <span class="mono text-[10px] text-emerald-300 border border-emerald-400/20 bg-emerald-400/5 rounded px-1.5 py-0.5">预训练 + LoRA</span>
+          </div>
+          <p class="mt-2 text-xs text-zinc-500 leading-relaxed">冻结主干，低秩适配微调</p>
+        </div>
+        <div class="rounded-xl border border-zinc-800/70 bg-zinc-900/40 p-5 flex-1">
+          <div class="flex items-center justify-between">
+            <span class="text-zinc-100 text-sm font-normal">SCEPTR / BALM-paired</span>
+            <span class="mono text-[10px] text-emerald-300 border border-emerald-400/20 bg-emerald-400/5 rounded px-1.5 py-0.5">预训练冻结</span>
+          </div>
+          <p class="mt-2 text-xs text-zinc-500 leading-relaxed">T 侧配对 αβ · B 侧重轻链 + SHM 特征</p>
+        </div>
+      </div>
+
+      <div class="hidden lg:flex items-center"><i data-lucide="arrow-right" class="w-5 h-5 text-zinc-600"></i></div>
+
+      <!-- fusion + latent -->
+      <div class="flex flex-col gap-4">
+        <div class="rounded-xl border border-emerald-400/30 bg-emerald-400/[0.05] p-5">
+          <div class="flex items-center gap-2 text-emerald-300 text-sm font-normal"><i data-lucide="git-merge" class="w-4 h-4"></i>克隆型引导的跨模态融合</div>
+          <ul class="mt-3 space-y-1.5 text-xs text-zinc-400 leading-relaxed">
+            <li class="flex gap-2"><span class="text-emerald-400">·</span>原型对比对齐：同克隆型两模态拉近、异克隆型推开</li>
+            <li class="flex gap-2"><span class="text-emerald-400">·</span>双向 cross-attention 交互层</li>
+            <li class="flex gap-2"><span class="text-emerald-400">·</span>批次不变性约束（多中心队列）</li>
+          </ul>
+        </div>
+        <div class="rounded-xl border border-zinc-800/70 bg-zinc-900/40 p-5">
+          <div class="flex items-center gap-2 text-zinc-100 text-sm font-normal"><i data-lucide="box" class="w-4 h-4 text-zinc-500"></i>可解释联合潜空间</div>
+          <p class="mt-2 text-xs text-zinc-500 leading-relaxed">GP 约束解码器 · 自身免疫基因程序库<br>每个潜维对应一个生物概念</p>
+        </div>
+      </div>
+
+      <div class="hidden lg:flex items-center"><i data-lucide="arrow-right" class="w-5 h-5 text-zinc-600"></i></div>
+
+      <!-- outputs -->
+      <div class="flex flex-col gap-3 justify-center">
+        <div class="rounded-lg border border-zinc-800/70 bg-zinc-900/40 px-4 py-3 text-sm text-zinc-200 flex items-center gap-2"><i data-lucide="crosshair" class="w-4 h-4 text-emerald-400"></i>致病克隆定位</div>
+        <div class="rounded-lg border border-zinc-800/70 bg-zinc-900/40 px-4 py-3 text-sm text-zinc-200 flex items-center gap-2"><i data-lucide="activity" class="w-4 h-4 text-emerald-400"></i>疾病活动度评分</div>
+        <div class="rounded-lg border border-zinc-800/70 bg-zinc-900/40 px-4 py-3 text-sm text-zinc-200 flex items-center gap-2"><i data-lucide="git-branch" class="w-4 h-4 text-emerald-400"></i>跨组织克隆追踪</div>
+        <div class="rounded-lg border border-zinc-800/70 bg-zinc-900/40 px-4 py-3 text-sm text-zinc-200 flex items-center gap-2"><i data-lucide="wand-2" class="w-4 h-4 text-emerald-400"></i>干预响应模拟</div>
+      </div>
+    </div>
+
+    <!-- evaluation discipline -->
+    <div class="mt-12 grid md:grid-cols-3 gap-4">
+      <div class="flex items-start gap-3 rounded-xl border border-zinc-800/70 bg-zinc-900/40 p-5">
+        <i data-lucide="shield-check" class="w-4 h-4 text-emerald-400 mt-0.5 shrink-0"></i>
+        <div><p class="text-sm text-zinc-200">克隆型不相交划分</p><p class="mt-1 text-xs text-zinc-500 leading-relaxed">同源克隆绝不同时出现在训练/测试集，杜绝评估泄漏</p></div>
+      </div>
+      <div class="flex items-start gap-3 rounded-xl border border-zinc-800/70 bg-zinc-900/40 p-5">
+        <i data-lucide="user-check" class="w-4 h-4 text-emerald-400 mt-0.5 shrink-0"></i>
+        <div><p class="text-sm text-zinc-200">患者级留出</p><p class="mt-1 text-xs text-zinc-500 leading-relaxed">临床任务以完整患者为单位留出，是底线而非可选项</p></div>
+      </div>
+      <div class="flex items-start gap-3 rounded-xl border border-zinc-800/70 bg-zinc-900/40 p-5">
+        <i data-lucide="globe" class="w-4 h-4 text-emerald-400 mt-0.5 shrink-0"></i>
+        <div><p class="text-sm text-zinc-200">跨中心外部验证</p><p class="mt-1 text-xs text-zinc-500 leading-relaxed">以 CIMA 一期健康基线为参照系，独立中心队列复核</p></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ CAPABILITIES ============ -->
+<section id="capabilities" class="py-24 px-6 border-t border-white/5">
+  <div class="max-w-6xl mx-auto">
+    <p class="text-xs tracking-widest uppercase text-emerald-400 mb-4">能力</p>
+    <h2 class="text-3xl md:text-4xl font-light text-zinc-50 tracking-tight">四个层层递进的任务</h2>
+
+    <div class="mt-14 grid md:grid-cols-2 gap-4">
+      <div class="rounded-xl border border-zinc-800/70 bg-zinc-900/40 p-7">
+        <div class="flex items-center justify-between">
+          <i data-lucide="crosshair" class="w-5 h-5 text-emerald-400"></i>
+          <span class="mono text-[11px] text-zinc-600">T3</span>
+        </div>
+        <h3 class="mt-5 text-xl text-zinc-50 font-light tracking-tight">致病克隆定位</h3>
+        <p class="mt-3 text-sm text-zinc-400 leading-relaxed">以"克隆扩增 × 病灶富集 × 跨患者共享"三判据定位候选自身反应克隆，并读出每个克隆所处的活化 / 耗竭 / 细胞毒性功能状态——自身免疫版 PrediTCR，输出可直接衔接抗原验证实验。</p>
+      </div>
+      <div class="rounded-xl border border-zinc-800/70 bg-zinc-900/40 p-7">
+        <div class="flex items-center justify-between">
+          <i data-lucide="activity" class="w-5 h-5 text-emerald-400"></i>
+          <span class="mono text-[11px] text-zinc-600">T4</span>
+        </div>
+        <h3 class="mt-5 text-xl text-zinc-50 font-light tracking-tight">疾病活动度评分</h3>
+        <p class="mt-3 text-sm text-zinc-400 leading-relaxed">克隆扩增程度与转录状态联合量化为患者级评分，与 SLEDAI / DAS28 等临床指标显著相关——通向疾病分型与疗效监测的分子标志物。</p>
+      </div>
+      <div class="rounded-xl border border-zinc-800/70 bg-zinc-900/40 p-7">
+        <div class="flex items-center justify-between">
+          <i data-lucide="git-branch" class="w-5 h-5 text-emerald-400"></i>
+          <span class="mono text-[11px] text-zinc-600">追踪</span>
+        </div>
+        <h3 class="mt-5 text-xl text-zinc-50 font-light tracking-tight">跨组织克隆追踪</h3>
+        <p class="mt-3 text-sm text-zinc-400 leading-relaxed">外周血 ↔ 病灶组织的克隆时空足迹：以组织轴替代时间轴，描绘克隆的迁移与归巢，并与 Stereo-seq 空间转录组衔接"时空"叙事。</p>
+      </div>
+      <div class="rounded-xl border border-zinc-800/70 bg-zinc-900/40 p-7">
+        <div class="flex items-center justify-between">
+          <i data-lucide="wand-2" class="w-5 h-5 text-emerald-400"></i>
+          <span class="mono text-[11px] text-zinc-600">T6</span>
+        </div>
+        <h3 class="mt-5 text-xl text-zinc-50 font-light tracking-tight">干预响应模拟</h3>
+        <p class="mt-3 text-sm text-zinc-400 leading-relaxed">在横断面数据上学习"疾病活动 / 用药"在联合潜空间中的扰动向量（scGen / CPA 范式），预测治疗把克隆推向什么状态——无需纵向配对样本。</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ BENCHMARKS ============ -->
+<section id="benchmarks" class="py-24 px-6 border-t border-white/5">
+  <div class="max-w-6xl mx-auto">
+    <p class="text-xs tracking-widest uppercase text-emerald-400 mb-4">性能</p>
+    <h2 class="text-3xl md:text-4xl font-light text-zinc-50 tracking-tight">同一把尺子，与既有联合模型对比</h2>
+    <p class="mt-5 max-w-2xl text-zinc-400 leading-relaxed">
+      全部模型在同一评估 harness 下测试：克隆型不相交划分 + 患者级留出 + 固定锚点克隆库（VDJdb / McPAS 自身免疫条目 + 抗 dsDNA / ACPA 文献序列）。
+    </p>
+
+    <div class="mt-14 grid lg:grid-cols-2 gap-4">
+      <div class="rounded-xl border border-zinc-800/70 bg-zinc-900/40 p-6">
+        <h3 class="text-sm text-zinc-200 font-normal">与既有联合模型的系统对比</h3>
+        <p class="mt-1 text-xs text-zinc-500">患者级活动度 AUC 为 TSTScope 与 CIMA-TxR 特有任务</p>
+        <div class="mt-5 h-72"><canvas id="benchChart"></canvas></div>
+      </div>
+      <div class="rounded-xl border border-zinc-800/70 bg-zinc-900/40 p-6">
+        <h3 class="text-sm text-zinc-200 font-normal">逐件替换消融（R0 → R3）</h3>
+        <p class="mt-1 text-xs text-zinc-500">每次只换一个零件，同一 harness 复测（指标：锚点克隆回收率）</p>
+        <div class="mt-5 h-72"><canvas id="ablationChart"></canvas></div>
+      </div>
+    </div>
+
+    <!-- ablation table -->
+    <div class="mt-4 rounded-xl border border-zinc-800/70 bg-zinc-900/40 overflow-hidden">
+      <table class="w-full text-sm">
+        <thead>
+          <tr class="border-b border-zinc-800/70 text-xs text-zinc-500">
+            <th class="text-left font-normal px-6 py-3.5">版本</th>
+            <th class="text-left font-normal px-6 py-3.5">改动（相对上一版）</th>
+            <th class="text-right font-normal px-6 py-3.5">锚点回收率</th>
+            <th class="text-right font-normal px-6 py-3.5">Δ</th>
+          </tr>
+        </thead>
+        <tbody class="text-zinc-300">
+          <tr class="border-b border-zinc-800/40">
+            <td class="px-6 py-3.5 mono text-xs">R0</td>
+            <td class="px-6 py-3.5 text-zinc-400">mvTCR 原样复现（参照系）</td>
+            <td class="px-6 py-3.5 text-right mono">0.68</td>
+            <td class="px-6 py-3.5 text-right mono text-zinc-600">—</td>
+          </tr>
+          <tr class="border-b border-zinc-800/40">
+            <td class="px-6 py-3.5 mono text-xs">R1</td>
+            <td class="px-6 py-3.5 text-zinc-400">换受体编码器：SCEPTR（T）+ BALM-paired（B），冻结抽特征</td>
+            <td class="px-6 py-3.5 text-right mono">0.81</td>
+            <td class="px-6 py-3.5 text-right mono text-emerald-400">+0.13</td>
+          </tr>
+          <tr class="border-b border-zinc-800/40">
+            <td class="px-6 py-3.5 mono text-xs">R2</td>
+            <td class="px-6 py-3.5 text-zinc-400">换转录组编码器：scGPT 冻结主干 + LoRA</td>
+            <td class="px-6 py-3.5 text-right mono">0.86</td>
+            <td class="px-6 py-3.5 text-right mono text-emerald-400">+0.05</td>
+          </tr>
+          <tr>
+            <td class="px-6 py-3.5 mono text-xs text-emerald-300">R3 = CIMA-TxR</td>
+            <td class="px-6 py-3.5 text-zinc-400">换融合层：克隆型原型对比对齐 + 双向 cross-attention</td>
+            <td class="px-6 py-3.5 text-right mono text-emerald-300">0.91</td>
+            <td class="px-6 py-3.5 text-right mono text-emerald-400">+0.05</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</section>
+
+<!-- ============ CASE STUDY ============ -->
+<section id="case" class="py-24 px-6 border-t border-white/5">
+  <div class="max-w-6xl mx-auto">
+    <p class="text-xs tracking-widest uppercase text-emerald-400 mb-4">案例</p>
+    <h2 class="text-3xl md:text-4xl font-light text-zinc-50 tracking-tight">SLE 队列：从评分到致病克隆</h2>
+    <p class="mt-5 max-w-2xl text-zinc-400 leading-relaxed">312 例系统性红斑狼疮患者 + 198 例健康对照（CIMA-RD 首批），独立中心队列复核。</p>
+
+    <div class="mt-14 grid lg:grid-cols-5 gap-4">
+      <div class="lg:col-span-3 rounded-xl border border-zinc-800/70 bg-zinc-900/40 p-6">
+        <h3 class="text-sm text-zinc-200 font-normal">活动度评分按 SLEDAI 分层的分布</h3>
+        <p class="mt-1 text-xs text-zinc-500">患者级评分与 SLEDAI 的 Spearman r = 0.71（p &lt; 1e-15）</p>
+        <div class="mt-5 h-64"><canvas id="caseChart"></canvas></div>
+      </div>
+      <div class="lg:col-span-2 flex flex-col gap-4">
+        <div class="rounded-xl border border-zinc-800/70 bg-zinc-900/40 p-6 flex-1">
+          <div class="flex items-center gap-2"><i data-lucide="anchor" class="w-4 h-4 text-emerald-400"></i><h3 class="text-sm text-zinc-200 font-normal">锚点克隆回收</h3></div>
+          <p class="mt-3 text-sm text-zinc-400 leading-relaxed">模型提名的 Top-50 高贡献克隆中，<span class="text-zinc-100 mono">41 / 50</span> 与已知抗 dsDNA 自身反应克隆特征显著重叠。</p>
+        </div>
+        <div class="rounded-xl border border-zinc-800/70 bg-zinc-900/40 p-6 flex-1">
+          <div class="flex items-center gap-2"><i data-lucide="microscope" class="w-4 h-4 text-emerald-400"></i><h3 class="text-sm text-zinc-200 font-normal">新发现</h3></div>
+          <p class="mt-3 text-sm text-zinc-400 leading-relaxed">CXCL13⁺ Tph 样克隆群在活动期显著扩增且与 B 细胞克隆扩增共定位——为" Tph–B 细胞轴驱动 SLE 活动"提供了单细胞克隆级证据。</p>
+        </div>
+        <div class="rounded-xl border border-zinc-800/70 bg-zinc-900/40 p-6 flex-1">
+          <div class="flex items-center gap-2"><i data-lucide="flask-conical" class="w-4 h-4 text-emerald-400"></i><h3 class="text-sm text-zinc-200 font-normal">实验闭环</h3></div>
+          <p class="mt-3 text-sm text-zinc-400 leading-relaxed">PrediTCR 范式：数十个模型提名克隆进入自身抗原验证，少量高质量实验标签即可迭代下一轮模型。</p>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ QUICKSTART ============ -->
+<section id="quickstart" class="py-24 px-6 border-t border-white/5">
+  <div class="max-w-6xl mx-auto">
+    <p class="text-xs tracking-widest uppercase text-emerald-400 mb-4">快速开始</p>
+    <h2 class="text-3xl md:text-4xl font-light text-zinc-50 tracking-tight">三行代码，嵌入你的细胞</h2>
+
+    <div class="mt-12 grid lg:grid-cols-2 gap-4">
+      <div class="rounded-xl border border-zinc-800/70 bg-zinc-950 overflow-hidden">
+        <div class="flex items-center gap-1.5 px-4 py-3 border-b border-zinc-800/70">
+          <span class="w-2.5 h-2.5 rounded-full bg-zinc-700"></span>
+          <span class="w-2.5 h-2.5 rounded-full bg-zinc-700"></span>
+          <span class="w-2.5 h-2.5 rounded-full bg-zinc-700"></span>
+          <span class="ml-3 text-xs text-zinc-600 mono">install</span>
+        </div>
+        <pre class="p-5 text-sm mono text-zinc-300 leading-relaxed overflow-x-auto"><code><span class="text-zinc-600"># 安装（Python ≥ 3.10）</span>
+<span class="text-emerald-400">$</span> pip install cima-txr
+
+<span class="text-zinc-600"># 数据要求：AnnData，obs 含克隆型标注</span>
+<span class="text-zinc-600"># （scirpy / Dandelion 双轨质控输出）</span></code></pre>
+      </div>
+      <div class="rounded-xl border border-zinc-800/70 bg-zinc-950 overflow-hidden">
+        <div class="flex items-center gap-1.5 px-4 py-3 border-b border-zinc-800/70">
+          <span class="w-2.5 h-2.5 rounded-full bg-zinc-700"></span>
+          <span class="w-2.5 h-2.5 rounded-full bg-zinc-700"></span>
+          <span class="w-2.5 h-2.5 rounded-full bg-zinc-700"></span>
+          <span class="ml-3 text-xs text-zinc-600 mono">quickstart.py</span>
+        </div>
+        <pre class="p-5 text-sm mono text-zinc-300 leading-relaxed overflow-x-auto"><code><span class="text-purple-300">import</span> cima_txr
+
+model = cima_txr.load(<span class="text-emerald-300">"cima-txr-base"</span>)   <span class="text-zinc-600"># 双预训练联合模型</span>
+model.embed(adata)                         <span class="text-zinc-600"># → obsm["X_cimatxr"]</span>
+
+scores = model.score_activity(adata)       <span class="text-zinc-600"># 患者级活动度</span>
+clones = model.locate_pathogenic(adata)    <span class="text-zinc-600"># 致病克隆定位</span>
+delta  = model.perturb(adata, target=<span class="text-emerald-300">"remission"</span>)</code></pre>
+      </div>
+    </div>
+
+    <div class="mt-4 grid md:grid-cols-3 gap-4">
+      <a href="#" class="rounded-xl border border-zinc-800/70 bg-zinc-900/40 p-5 flex items-center gap-3 hover:border-zinc-600 transition-colors group">
+        <i data-lucide="book-open" class="w-4 h-4 text-zinc-500 group-hover:text-emerald-400 transition-colors"></i>
+        <div><p class="text-sm text-zinc-200">文档与教程</p><p class="text-xs text-zinc-500">预处理 · 微调 · 任务头</p></div>
+      </a>
+      <a href="#" class="rounded-xl border border-zinc-800/70 bg-zinc-900/40 p-5 flex items-center gap-3 hover:border-zinc-600 transition-colors group">
+        <i data-lucide="database" class="w-4 h-4 text-zinc-500 group-hover:text-emerald-400 transition-colors"></i>
+        <div><p class="text-sm text-zinc-200">模型权重</p><p class="text-xs text-zinc-500">cima-txr-base · cima-txr-sle</p></div>
+      </a>
+      <a href="#" class="rounded-xl border border-zinc-800/70 bg-zinc-900/40 p-5 flex items-center gap-3 hover:border-zinc-600 transition-colors group">
+        <i data-lucide="repeat" class="w-4 h-4 text-zinc-500 group-hover:text-emerald-400 transition-colors"></i>
+        <div><p class="text-sm text-zinc-200">评估 harness</p><p class="text-xs text-zinc-500">一键复现全部基准结果</p></div>
+      </a>
+    </div>
+  </div>
+</section>
+
+<!-- ============ CITATION / FOOTER ============ -->
+<footer id="citation" class="py-24 px-6 border-t border-white/5">
+  <div class="max-w-6xl mx-auto">
+    <p class="text-xs tracking-widest uppercase text-emerald-400 mb-4">引用</p>
+    <h2 class="text-2xl md:text-3xl font-light text-zinc-50 tracking-tight">CIMA-TxR: dual-pretrained joint modeling of single-cell transcriptomes and paired immune repertoires in autoimmune disease</h2>
+    <p class="mt-3 text-sm text-zinc-500">预印本准备中 · 方法学主文（R 系列对比 + 消融 + 图谱）与组库预测模型独立文同步投稿</p>
+
+    <div class="mt-8 rounded-xl border border-zinc-800/70 bg-zinc-950 overflow-hidden">
+      <div class="flex items-center justify-between px-4 py-3 border-b border-zinc-800/70">
+        <span class="text-xs text-zinc-600 mono">BibTeX</span>
+        <button onclick="navigator.clipboard.writeText(document.getElementById('bib').innerText)" class="flex items-center gap-1.5 text-xs text-zinc-500 hover:text-zinc-200 transition-colors"><i data-lucide="copy" class="w-3.5 h-3.5"></i>复制</button>
+      </div>
+      <pre id="bib" class="p-5 text-xs mono text-zinc-400 leading-relaxed overflow-x-auto">@article{cimatxr2026,
+  title   = {CIMA-TxR: dual-pretrained joint modeling of single-cell
+             transcriptomes and paired immune repertoires in autoimmune disease},
+  author  = {CIMA-RD AI Team},
+  journal = {bioRxiv (in preparation)},
+  year    = {2026}
+}</pre>
+    </div>
+
+    <div class="mt-16 pt-8 border-t border-zinc-800/50 flex flex-col md:flex-row items-start md:items-center justify-between gap-6">
+      <div class="flex items-center gap-3">
+        <div class="w-7 h-7 rounded-lg bg-emerald-400/10 border border-emerald-400/20 flex items-center justify-center">
+          <i data-lucide="dna" class="w-4 h-4 text-emerald-400"></i>
+        </div>
+        <div>
+          <p class="text-sm text-zinc-300">CIMA-TxR · CIMA-RD 数据底座</p>
+          <p class="text-xs text-zinc-600 mt-0.5">克隆给细胞一个身份，转录组给克隆一个状态。</p>
+        </div>
+      </div>
+      <p class="text-xs text-zinc-600 leading-relaxed max-w-md">
+        本页为研究概念预览（design preview）：页面所示指标与案例为设计目标与内部占位数据，非已发表结果。
+      </p>
+    </div>
+  </div>
+</footer>
+
+<script>
+  lucide.createIcons({ attrs: { 'stroke-width': 1.5 } });
+
+  Chart.defaults.color = '#71717a';
+  Chart.defaults.font.family = "'Inter', sans-serif";
+  Chart.defaults.font.size = 11;
+  const gridOpt = { color: 'rgba(255,255,255,0.05)' };
+  const legendOpt = { labels: { boxWidth: 10, boxHeight: 10, usePointStyle: true, pointStyle: 'circle', padding: 16 } };
+
+  // ---- benchmark comparison ----
+  new Chart(document.getElementById('benchChart'), {
+    type: 'bar',
+    data: {
+      labels: ['锚点克隆回收率', '联合嵌入 kNN F1', '患者级活动度 AUC'],
+      datasets: [
+        { label: 'mvTCR (2024)',    data: [0.68, 0.82, null], backgroundColor: '#3f3f46', borderRadius: 4 },
+        { label: 'MIST (2025)',     data: [0.74, 0.84, null], backgroundColor: '#52525b', borderRadius: 4 },
+        { label: 'TSTScope (2026)', data: [0.81, 0.87, 0.83], backgroundColor: '#a1a1aa', borderRadius: 4 },
+        { label: 'CIMA-TxR',        data: [0.91, 0.90, 0.93], backgroundColor: '#34d399', borderRadius: 4 }
+      ]
+    },
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      scales: {
+        y: { min: 0.5, max: 1.0, grid: gridOpt, ticks: { format: { style: 'decimal', minimumFractionDigits: 1 } } },
+        x: { grid: { display: false } }
+      },
+      plugins: { legend: legendOpt }
+    }
+  });
+
+  // ---- ablation line ----
+  new Chart(document.getElementById('ablationChart'), {
+    type: 'line',
+    data: {
+      labels: [['R0', 'mvTCR 原样'], ['R1', '+受体编码器'], ['R2', '+转录组编码器'], ['R3', '+对比融合']],
+      datasets: [{
+        label: '锚点克隆回收率',
+        data: [0.68, 0.81, 0.86, 0.91],
+        borderColor: '#34d399',
+        backgroundColor: 'rgba(52,211,153,0.08)',
+        pointBackgroundColor: '#34d399',
+        pointRadius: 5,
+        fill: true,
+        tension: 0.3
+      }]
+    },
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      scales: {
+        y: { min: 0.6, max: 1.0, grid: gridOpt },
+        x: { grid: { display: false }, ticks: { maxRotation: 0 } }
+      },
+      plugins: { legend: { display: false } }
+    }
+  });
+
+  // ---- case study: activity score by SLEDAI tier ----
+  new Chart(document.getElementById('caseChart'), {
+    type: 'bar',
+    data: {
+      labels: ['健康对照', '缓解期', '轻度活动', '中度活动', '重度活动'],
+      datasets: [{
+        label: 'CIMA-TxR 活动度评分（均值 ± SE）',
+        data: [0.08, 0.21, 0.44, 0.63, 0.82],
+        backgroundColor: ['#3f3f46', '#52525b', '#34d39966', '#34d399aa', '#34d399'],
+        borderRadius: 6
+      }]
+    },
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      scales: {
+        y: { min: 0, max: 1, grid: gridOpt },
+        x: { grid: { display: false } }
+      },
+      plugins: { legend: { display: false } }
+    }
+  });
+</script>
+</body>
+</html>
